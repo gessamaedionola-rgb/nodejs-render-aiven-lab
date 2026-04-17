@@ -3,10 +3,11 @@ const mysql = require("mysql2");
 const bodyParser = require("body-parser");
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
 
-// DATABASE CONNECTION
+// DATABASE CONNECTION (AIVEN + RENDER)
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -18,15 +19,16 @@ const db = mysql.createConnection({
   }
 });
 
+// CONNECT DATABASE
 db.connect((err) => {
   if (err) {
-    console.log("Database connection failed:", err);
+    console.log("Database connection FAILED:", err);
   } else {
-    console.log("Connected to database");
+    console.log("Connected to MySQL Database");
   }
 });
 
-// MAIN PAGE
+// HOME PAGE
 app.get("/", (req, res) => {
 
   db.query("SELECT * FROM students", (err, results) => {
@@ -41,41 +43,41 @@ app.get("/", (req, res) => {
     }
 
     let html = `
-<html>
-<head>
-<title>Student System</title>
-</head>
-<body>
+    <html>
+    <head>
+    <title>Student System</title>
+    </head>
+    <body>
 
-<h2>Student CRUD Dashboard</h2>
+    <h2>Student CRUD Dashboard</h2>
 
-<form method="POST" action="/add">
-Name: <input name="stud_name"><br>
-Address: <input name="stud_address"><br>
-Age: <input name="age"><br>
-<button>Add Student</button>
-</form>
+    <form method="POST" action="/add">
+    Name: <input name="stud_name"><br>
+    Address: <input name="stud_address"><br>
+    Age: <input name="age"><br>
+    <button>Add Student</button>
+    </form>
 
-<h2>Students</h2>
-`;
+    <h2>Students</h2>
+    `;
 
     results.forEach(student => {
       html += `
-<p>
-<b>${student.stud_name}</b><br>
-${student.stud_address}<br>
-${student.age}<br>
+      <p>
+      <b>${student.stud_name}</b><br>
+      ${student.stud_address}<br>
+      ${student.age}<br>
 
-<a href="/edit/${student.stud_id}">Edit</a>
-<a href="/delete/${student.stud_id}">Delete</a>
-</p>
-`;
+      <a href="/edit/${student.stud_id}">Edit</a>
+      <a href="/delete/${student.stud_id}">Delete</a>
+      </p>
+      `;
     });
 
     html += `
-</body>
-</html>
-`;
+    </body>
+    </html>
+    `;
 
     res.send(html);
 
@@ -94,28 +96,10 @@ app.post("/add", (req, res) => {
     (err) => {
       if (err) {
         console.log(err);
-        return res.send("Insert failed");
       }
-
       res.redirect("/");
     }
   );
-
-});
-
-// DELETE STUDENT
-app.get("/delete/:id", (req, res) => {
-
-  const id = req.params.id;
-
-  db.query("DELETE FROM students WHERE stud_id = ?", [id], (err) => {
-    if (err) {
-      console.log(err);
-      return res.send("Delete failed");
-    }
-
-    res.redirect("/");
-  });
 
 });
 
@@ -124,35 +108,36 @@ app.get("/edit/:id", (req, res) => {
 
   const id = req.params.id;
 
-  db.query("SELECT * FROM students WHERE stud_id = ?", [id], (err, results) => {
+  db.query(
+    "SELECT * FROM students WHERE stud_id = ?",
+    [id],
+    (err, results) => {
 
-    if (err) {
-      console.log(err);
-      return res.send("Error loading student");
+      if (err) {
+        return res.send("Error loading student");
+      }
+
+      const s = results[0];
+
+      res.send(`
+      <html>
+      <body>
+
+      <h2>Edit Student</h2>
+
+      <form method="POST" action="/update/${id}">
+      Name: <input name="stud_name" value="${s.stud_name}"><br>
+      Address: <input name="stud_address" value="${s.stud_address}"><br>
+      Age: <input name="age" value="${s.age}"><br>
+      <button>Update</button>
+      </form>
+
+      </body>
+      </html>
+      `);
+
     }
-
-    const student = results[0];
-
-    let html = `
-<html>
-<body>
-
-<h2>Edit Student</h2>
-
-<form method="POST" action="/update/${student.stud_id}">
-Name: <input name="stud_name" value="${student.stud_name}"><br>
-Address: <input name="stud_address" value="${student.stud_address}"><br>
-Age: <input name="age" value="${student.age}"><br>
-<button>Update</button>
-</form>
-
-</body>
-</html>
-`;
-
-    res.send(html);
-
-  });
+  );
 
 });
 
@@ -168,18 +153,32 @@ app.post("/update/:id", (req, res) => {
     (err) => {
       if (err) {
         console.log(err);
-        return res.send("Update failed");
       }
-
       res.redirect("/");
     }
   );
 
 });
 
-// SERVER
-const PORT = process.env.PORT || 3000;
+// DELETE STUDENT
+app.get("/delete/:id", (req, res) => {
 
+  const id = req.params.id;
+
+  db.query(
+    "DELETE FROM students WHERE stud_id=?",
+    [id],
+    (err) => {
+      if (err) {
+        console.log(err);
+      }
+      res.redirect("/");
+    }
+  );
+
+});
+
+// START SERVER
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
