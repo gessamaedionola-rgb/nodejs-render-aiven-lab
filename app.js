@@ -8,11 +8,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // DATABASE CONNECTION
 const db = mysql.createConnection({
-  host: "YOUR_HOST",
-  user: "YOUR_USERNAME",
-  password: "YOUR_PASSWORD",
-  database: "YOUR_DATABASE",
-  port: 3306
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 db.connect((err) => {
