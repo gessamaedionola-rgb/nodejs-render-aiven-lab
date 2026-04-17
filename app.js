@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.urlencoded({ extended: false }));
 
 // ========================
-// DATABASE CONNECTION
+// MYSQL POOL (RENDER SAFE)
 // ========================
 const db = mysql.createPool({
   host: process.env.DB_HOST,
@@ -24,14 +24,14 @@ const db = mysql.createPool({
   }
 });
 
-// connect safely
-db.connect((err) => {
-  if (err) {
-    console.log("❌ Database connection FAILED:");
-    console.log(err);
-  } else {
-    console.log("✅ Connected to MySQL Database");
-  }
+// ========================
+// TEST ROUTE (CHECK DB)
+// ========================
+app.get("/test-db", (req, res) => {
+  db.query("SELECT 1 + 1 AS result", (err, results) => {
+    if (err) return res.send("DB FAILED: " + err.message);
+    res.send("DB OK: " + results[0].result);
+  });
 });
 
 // ========================
@@ -41,29 +41,25 @@ app.get("/", (req, res) => {
 
   db.query("SELECT * FROM students", (err, results) => {
 
-    // ✅ REAL ERROR DEBUGGING
     if (err) {
-      console.log("❌ QUERY ERROR FULL:", err);
+      console.log("QUERY ERROR:", err);
       return res.send("Database query failed: " + err.message);
     }
 
-    // prevent crash
     if (!results) results = [];
 
     let html = `
     <html>
-    <head>
-    <title>Student System</title>
-    </head>
+    <head><title>Student System</title></head>
     <body>
 
     <h2>Student CRUD Dashboard</h2>
 
     <form method="POST" action="/add">
-    Name: <input name="stud_name"><br>
-    Address: <input name="stud_address"><br>
-    Age: <input name="age"><br>
-    <button>Add Student</button>
+      Name: <input name="stud_name"><br>
+      Address: <input name="stud_address"><br>
+      Age: <input name="age"><br>
+      <button>Add Student</button>
     </form>
 
     <h2>Students</h2>
@@ -72,17 +68,17 @@ app.get("/", (req, res) => {
     results.forEach(student => {
       html += `
       <p>
-      <b>${student.stud_name}</b><br>
-      ${student.stud_address}<br>
-      ${student.age}<br>
+        <b>${student.stud_name}</b><br>
+        ${student.stud_address}<br>
+        ${student.age}<br>
 
-      <a href="/edit/${student.stud_id}">Edit</a>
-      <a href="/delete/${student.stud_id}">Delete</a>
+        <a href="/edit/${student.stud_id}">Edit</a>
+        <a href="/delete/${student.stud_id}">Delete</a>
       </p>
       `;
     });
 
-    html += `</body></html>`;
+    html += "</body></html>";
     res.send(html);
   });
 });
@@ -91,7 +87,6 @@ app.get("/", (req, res) => {
 // ADD
 // ========================
 app.post("/add", (req, res) => {
-
   const { stud_name, stud_address, age } = req.body;
 
   db.query(
@@ -122,13 +117,12 @@ app.get("/edit/:id", (req, res) => {
 
       res.send(`
       <form method="POST" action="/update/${s.stud_id}">
-      Name: <input name="stud_name" value="${s.stud_name}"><br>
-      Address: <input name="stud_address" value="${s.stud_address}"><br>
-      Age: <input name="age" value="${s.age}"><br>
-      <button>Update</button>
+        Name: <input name="stud_name" value="${s.stud_name}"><br>
+        Address: <input name="stud_address" value="${s.stud_address}"><br>
+        Age: <input name="age" value="${s.age}"><br>
+        <button>Update</button>
       </form>
       `);
-
     }
   );
 });
@@ -137,7 +131,6 @@ app.get("/edit/:id", (req, res) => {
 // UPDATE
 // ========================
 app.post("/update/:id", (req, res) => {
-
   const { stud_name, stud_address, age } = req.body;
 
   db.query(
