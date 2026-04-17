@@ -1,0 +1,27 @@
+{
+  "name": "nodejs-render-aiven-lab",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gessamaedionola-rgb/nodejs-render-aiven-lab.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/gessamaedionola-rgb/nodejs-render-aiven-lab/issues"
+  },
+  "homepage": "https://github.com/gessamaedionola-rgb/nodejs-render-aiven-lab#readme",
+  "dependencies": {
+    "body-parser": "^2.2.2",
+    "express": "^5.2.1",
+    "mysql2": "^3.22.1"
+  }
+}
