@@ -3,31 +3,39 @@ const mysql = require("mysql2");
 const bodyParser = require("body-parser");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// database connection
+// DATABASE CONNECTION
 const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT
+  host: "YOUR_HOST",
+  user: "YOUR_USERNAME",
+  password: "YOUR_PASSWORD",
+  database: "YOUR_DATABASE",
+  port: 3306
 });
 
-
-db.connect(err => {
+db.connect((err) => {
   if (err) {
-    console.log("Database connection failed");
+    console.log("Database connection failed:", err);
   } else {
-    console.log("Connected to MySQL");
+    console.log("Connected to database");
   }
 });
 
 // MAIN PAGE
 app.get("/", (req, res) => {
+
   db.query("SELECT * FROM students", (err, results) => {
+
+    if (err) {
+      console.log("Query error:", err);
+      return res.send("Database query failed");
+    }
+
+    if (!results) {
+      results = [];
+    }
 
     let html = `
 <html>
@@ -67,62 +75,108 @@ ${student.age}<br>
 `;
 
     res.send(html);
+
   });
+
 });
 
-// ADD
+// ADD STUDENT
 app.post("/add", (req, res) => {
+
   const { stud_name, stud_address, age } = req.body;
 
   db.query(
     "INSERT INTO students (stud_name, stud_address, age) VALUES (?, ?, ?)",
     [stud_name, stud_address, age],
-    () => res.redirect("/")
+    (err) => {
+      if (err) {
+        console.log(err);
+        return res.send("Insert failed");
+      }
+
+      res.redirect("/");
+    }
   );
+
 });
 
-// EDIT
-app.get("/edit/:id", (req, res) => {
+// DELETE STUDENT
+app.get("/delete/:id", (req, res) => {
+
   const id = req.params.id;
 
-  db.query("SELECT * FROM students WHERE stud_id=?", [id], (err, results) => {
-    const s = results[0];
+  db.query("DELETE FROM students WHERE stud_id = ?", [id], (err) => {
+    if (err) {
+      console.log(err);
+      return res.send("Delete failed");
+    }
 
-    res.send(`
-<form method="POST" action="/update/${id}">
-Name: <input name="stud_name" value="${s.stud_name}"><br>
-Address: <input name="stud_address" value="${s.stud_address}"><br>
-Age: <input name="age" value="${s.age}"><br>
-<button>Update</button>
-</form>
-`);
+    res.redirect("/");
   });
+
 });
 
-// UPDATE
+// EDIT PAGE
+app.get("/edit/:id", (req, res) => {
+
+  const id = req.params.id;
+
+  db.query("SELECT * FROM students WHERE stud_id = ?", [id], (err, results) => {
+
+    if (err) {
+      console.log(err);
+      return res.send("Error loading student");
+    }
+
+    const student = results[0];
+
+    let html = `
+<html>
+<body>
+
+<h2>Edit Student</h2>
+
+<form method="POST" action="/update/${student.stud_id}">
+Name: <input name="stud_name" value="${student.stud_name}"><br>
+Address: <input name="stud_address" value="${student.stud_address}"><br>
+Age: <input name="age" value="${student.age}"><br>
+<button>Update</button>
+</form>
+
+</body>
+</html>
+`;
+
+    res.send(html);
+
+  });
+
+});
+
+// UPDATE STUDENT
 app.post("/update/:id", (req, res) => {
+
   const id = req.params.id;
   const { stud_name, stud_address, age } = req.body;
 
   db.query(
     "UPDATE students SET stud_name=?, stud_address=?, age=? WHERE stud_id=?",
     [stud_name, stud_address, age, id],
-    () => res.redirect("/")
+    (err) => {
+      if (err) {
+        console.log(err);
+        return res.send("Update failed");
+      }
+
+      res.redirect("/");
+    }
   );
+
 });
 
-// DELETE
-app.get("/delete/:id", (req, res) => {
-  const id = req.params.id;
+// SERVER
+const PORT = process.env.PORT || 3000;
 
-  db.query(
-    "DELETE FROM students WHERE stud_id=?",
-    [id],
-    () => res.redirect("/")
-  );
-});
-
-// START SERVER
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
