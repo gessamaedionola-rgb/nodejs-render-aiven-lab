@@ -25,7 +25,7 @@ const db = mysql.createPool({
 });
 
 // ========================
-// TEST ROUTE (CHECK DB)
+// TEST DB
 // ========================
 app.get("/test-db", (req, res) => {
   db.query("SELECT 1 + 1 AS result", (err, results) => {
@@ -35,7 +35,7 @@ app.get("/test-db", (req, res) => {
 });
 
 // ========================
-// HOME PAGE
+// HOME PAGE (INSTRUCTOR UI)
 // ========================
 app.get("/", (req, res) => {
 
@@ -50,35 +50,126 @@ app.get("/", (req, res) => {
 
     let html = `
     <html>
-    <head><title>Student System</title></head>
+    <head>
+      <title>Student System</title>
+
+      <style>
+        body {
+          font-family: Arial;
+          margin: 0;
+          background: #f0f2f5;
+        }
+
+        .header {
+          background: #1877f2;
+          color: white;
+          padding: 15px;
+          font-size: 22px;
+          font-weight: bold;
+          text-align: center;
+        }
+
+        .container {
+          width: 70%;
+          margin: auto;
+          margin-top: 30px;
+        }
+
+        .card {
+          background: white;
+          padding: 20px;
+          margin-bottom: 20px;
+          border-radius: 10px;
+          box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input {
+          padding: 10px;
+          width: 95%;
+          margin-top: 8px;
+          margin-bottom: 10px;
+          border-radius: 6px;
+          border: 1px solid #ddd;
+        }
+
+        button {
+          background: #1877f2;
+          color: white;
+          border: none;
+          padding: 10px 18px;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+
+        button:hover {
+          background: #166fe5;
+        }
+
+        .student {
+          border-bottom: 1px solid #ddd;
+          padding: 10px 0;
+        }
+
+        .actions a {
+          text-decoration: none;
+          margin-right: 10px;
+          font-weight: bold;
+        }
+
+        .edit {
+          color: #1877f2;
+        }
+
+        .delete {
+          color: red;
+        }
+      </style>
+
+    </head>
+
     <body>
 
-    <h2>Student CRUD Dashboard</h2>
+      <div class="header">Student CRUD Dashboard</div>
 
-    <form method="POST" action="/add">
-      Name: <input name="stud_name"><br>
-      Address: <input name="stud_address"><br>
-      Age: <input name="age"><br>
-      <button>Add Student</button>
-    </form>
+      <div class="container">
 
-    <h2>Students</h2>
+        <div class="card">
+          <h2>Add Student</h2>
+          <form method="POST" action="/add">
+            Name:<input name="stud_name" required>
+            Address:<input name="stud_address" required>
+            Age:<input name="age" required>
+            <button>Add Student</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>Student List</h2>
     `;
 
     results.forEach(student => {
       html += `
-      <p>
+      <div class="student">
         <b>${student.stud_name}</b><br>
-        ${student.stud_address}<br>
-        ${student.age}<br>
+        Address: ${student.stud_address}<br>
+        Age: ${student.age}<br>
 
-        <a href="/edit/${student.stud_id}">Edit</a>
-        <a href="/delete/${student.stud_id}">Delete</a>
-      </p>
+        <div class="actions">
+          <a class="edit" href="/edit/${student.stud_id}">Edit</a>
+          <a class="delete" href="/delete/${student.stud_id}">Delete</a>
+        </div>
+      </div>
       `;
     });
 
-    html += "</body></html>";
+    html += `
+        </div>
+      </div>
+
+    </body>
+    </html>
+    `;
+
     res.send(html);
   });
 });
@@ -92,10 +183,7 @@ app.post("/add", (req, res) => {
   db.query(
     "INSERT INTO students (stud_name, stud_address, age) VALUES (?, ?, ?)",
     [stud_name, stud_address, age],
-    (err) => {
-      if (err) console.log(err);
-      res.redirect("/");
-    }
+    () => res.redirect("/")
   );
 });
 
@@ -116,12 +204,22 @@ app.get("/edit/:id", (req, res) => {
       const s = results[0];
 
       res.send(`
-      <form method="POST" action="/update/${s.stud_id}">
-        Name: <input name="stud_name" value="${s.stud_name}"><br>
-        Address: <input name="stud_address" value="${s.stud_address}"><br>
-        Age: <input name="age" value="${s.age}"><br>
-        <button>Update</button>
-      </form>
+      <html>
+      <body style="font-family:Arial; background:#f0f2f5;">
+
+        <div style="width:40%; margin:auto; margin-top:80px; background:white; padding:20px; border-radius:10px;">
+          <h2>Edit Student</h2>
+
+          <form method="POST" action="/update/${s.stud_id}">
+            Name:<input name="stud_name" value="${s.stud_name}" style="width:100%; padding:10px;"><br>
+            Address:<input name="stud_address" value="${s.stud_address}" style="width:100%; padding:10px;"><br>
+            Age:<input name="age" value="${s.age}" style="width:100%; padding:10px;"><br>
+            <button style="margin-top:10px; padding:10px; background:#1877f2; color:white;">Update</button>
+          </form>
+        </div>
+
+      </body>
+      </html>
       `);
     }
   );
@@ -136,10 +234,7 @@ app.post("/update/:id", (req, res) => {
   db.query(
     "UPDATE students SET stud_name=?, stud_address=?, age=? WHERE stud_id=?",
     [stud_name, stud_address, age, req.params.id],
-    (err) => {
-      if (err) console.log(err);
-      res.redirect("/");
-    }
+    () => res.redirect("/")
   );
 });
 
@@ -151,10 +246,7 @@ app.get("/delete/:id", (req, res) => {
   db.query(
     "DELETE FROM students WHERE stud_id=?",
     [req.params.id],
-    (err) => {
-      if (err) console.log(err);
-      res.redirect("/");
-    }
+    () => res.redirect("/")
   );
 });
 
