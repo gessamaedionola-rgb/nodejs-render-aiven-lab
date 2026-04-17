@@ -9,12 +9,13 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 // database connection
 const db = mysql.createConnection({
-  host: "YOUR_AIVEN_HOST",
-  user: "YOUR_AIVEN_USER",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: "YOUR_DATABASE_NAME",
-  port: 23687
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT
 });
+
 
 db.connect(err => {
   if (err) {
